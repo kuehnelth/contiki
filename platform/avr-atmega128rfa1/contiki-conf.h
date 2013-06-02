@@ -48,6 +48,8 @@
 #define F_CPU          8000000UL
 #endif
 
+#define CC_CONF_INLINE inline
+
 #include <stdint.h>
 
 /* The AVR tick interrupt usually is done with an 8 bit counter around 128 Hz.
