@@ -56,6 +56,7 @@
 #define REST_RES_LIGHT 0
 #define REST_RES_BATTERY 0
 #define REST_RES_RADIO 0
+#define REST_RES_SHT21 1
 
 
 
@@ -84,6 +85,9 @@
 #endif
 #if defined (PLATFORM_HAS_RADIO)
 #include "dev/radio-sensor.h"
+#endif
+#if defined (PLATFORM_HAS_SHT21)
+#include "dev/i2c/sht21-sensor.h"
 #endif
 
 
@@ -693,6 +697,91 @@ light_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred
 #endif /* PLATFORM_HAS_LIGHT */
 
 /******************************************************************************/
+#if REST_RES_SHT21 && defined (PLATFORM_HAS_SHT21)
+/* A simple getter example. Returns the reading from sht21 sensor with a simple etag */
+RESOURCE(sht21_temperature, METHOD_GET, "sensors/sht21_temperature", "title=\"Temperature in [°C] (supports JSON)\";rt=\"TemperatureSensor\"");
+void
+sht21_temperature_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  char tempstr[20] = "ERROR";
+  if (sht21_sensor.value(SHT21_SENSOR_TEMP) == 1)
+      sht21_sensor_getLastTemperature(tempstr, sizeof(tempstr));
+
+  const uint16_t *accept = NULL;
+  int num = REST.get_header_accept(request, &accept);
+
+  if ((num==0) || (num && accept[0]==REST.type.TEXT_PLAIN))
+  {
+    REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "%s", tempstr);
+
+    REST.set_response_payload(response, (uint8_t *)buffer, strlen((char *)buffer));
+  }
+  else if (num && (accept[0]==REST.type.APPLICATION_XML))
+  {
+    REST.set_header_content_type(response, REST.type.APPLICATION_XML);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "<temperature value=\"%s\"/>", tempstr);
+
+    REST.set_response_payload(response, buffer, strlen((char *)buffer));
+  }
+  else if (num && (accept[0]==REST.type.APPLICATION_JSON))
+  {
+    REST.set_header_content_type(response, REST.type.APPLICATION_JSON);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "{'temperature':'%s'}", tempstr);
+
+    REST.set_response_payload(response, buffer, strlen((char *)buffer));
+  }
+  else
+  {
+    REST.set_response_status(response, REST.status.NOT_ACCEPTABLE);
+    const char *msg = "Supporting content-types text/plain, application/xml, and application/json";
+    REST.set_response_payload(response, msg, strlen(msg));
+  }
+}
+
+RESOURCE(sht21_humidity, METHOD_GET, "sensors/sht21_humidity", "title=\"Relative Humidity in [%RH] (supports JSON)\";rt=\"HumiditySensor\"");
+void
+sht21_humidity_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  char humstr[20] = "ERROR";
+  if (sht21_sensor.value(SHT21_SENSOR_RELATIVE_HUMIDITY) == 1)
+      sht21_sensor_getLastelativeHumidity(humstr, sizeof(humstr));
+
+  const uint16_t *accept = NULL;
+  int num = REST.get_header_accept(request, &accept);
+
+  if ((num==0) || (num && accept[0]==REST.type.TEXT_PLAIN))
+  {
+    REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "%s", humstr);
+
+    REST.set_response_payload(response, (uint8_t *)buffer, strlen((char *)buffer));
+  }
+  else if (num && (accept[0]==REST.type.APPLICATION_XML))
+  {
+    REST.set_header_content_type(response, REST.type.APPLICATION_XML);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "<humidity relative=\"%s\"/>", humstr);
+
+    REST.set_response_payload(response, buffer, strlen((char *)buffer));
+  }
+  else if (num && (accept[0]==REST.type.APPLICATION_JSON))
+  {
+    REST.set_header_content_type(response, REST.type.APPLICATION_JSON);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "{'humidity': {'relative':'%s'}}", humstr);
+
+    REST.set_response_payload(response, buffer, strlen((char *)buffer));
+  }
+  else
+  {
+    REST.set_response_status(response, REST.status.NOT_ACCEPTABLE);
+    const char *msg = "Supporting content-types text/plain, application/xml, and application/json";
+    REST.set_response_payload(response, msg, strlen(msg));
+  }
+}
+
+#endif /* PLATFORM_HAS_SHT21 */
+
+/******************************************************************************/
 #if REST_RES_BATTERY && defined (PLATFORM_HAS_BATTERY)
 /* A simple getter example. Returns the reading from light sensor with a simple etag */
 RESOURCE(battery, METHOD_GET, "sensors/battery", "title=\"Battery status\";rt=\"Battery\"");
@@ -857,6 +946,11 @@ PROCESS_THREAD(rest_server_example, ev, data)
 #if defined (PLATFORM_HAS_LIGHT) && REST_RES_LIGHT
   SENSORS_ACTIVATE(light_sensor);
   rest_activate_resource(&resource_light);
+#endif
+#if defined (PLATFORM_HAS_SHT21) && REST_RES_SHT21
+  SENSORS_ACTIVATE(sht21_sensor);
+  rest_activate_resource(&resource_sht21_temperature);
+  rest_activate_resource(&resource_sht21_humidity);
 #endif
 #if defined (PLATFORM_HAS_BATTERY) && REST_RES_BATTERY
   SENSORS_ACTIVATE(battery_sensor);

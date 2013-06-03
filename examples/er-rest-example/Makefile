@@ -9,6 +9,8 @@ ifeq ($(TARGET),$(filter $(TARGET),sky cooja))
 PROJECT_SOURCEFILES += static-routing.c
 endif
 
+include Makefile.sensors.include
+
 # variable for root Makefile.include
 WITH_UIP6=1
 # for some platforms
