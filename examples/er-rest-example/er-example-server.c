@@ -51,14 +51,12 @@
 #define REST_RES_PUSHING 1
 #define REST_RES_EVENT 1
 #define REST_RES_SUB 1
-#define REST_RES_LEDS 0
+#define REST_RES_LEDS 1
 #define REST_RES_TOGGLE 1
 #define REST_RES_LIGHT 0
 #define REST_RES_BATTERY 0
 #define REST_RES_RADIO 0
 #define REST_RES_SHT21 1
-
-
 
 #if !UIP_CONF_IPV6_RPL && !defined (CONTIKI_TARGET_MINIMAL_NET) && !defined (CONTIKI_TARGET_NATIVE)
 #warning "Compiling with static routing!"
@@ -612,8 +610,8 @@ leds_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_
       led = LEDS_RED;
     } else if(strncmp(color,"g", len)==0) {
       led = LEDS_GREEN;
-    } else if (strncmp(color,"b", len)==0) {
-      led = LEDS_BLUE;
+    } else if (strncmp(color,"y", len)==0) {
+      led = LEDS_YELLOW;
     } else {
       success = 0;
     }
