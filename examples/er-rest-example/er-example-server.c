@@ -477,7 +477,7 @@ separate_finalize_handler()
  * It takes an additional period parameter, which defines the interval to call [name]_periodic_handler().
  * A default post_handler takes care of subscriptions by managing a list of subscribers to notify.
  */
-PERIODIC_RESOURCE(pushing, METHOD_GET, "test/push", "title=\"Periodic demo\";obs", 5*CLOCK_SECOND);
+PERIODIC_RESOURCE(pushing, METHOD_GET, "test/push", "title=\"Periodic demo\";obs", 0.5*CLOCK_SECOND);
 
 void
 pushing_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
@@ -499,7 +499,17 @@ void
 pushing_periodic_handler(resource_t *r)
 {
   static uint16_t obs_counter = 0;
+  static uint8_t old_button_status = 0;
+  uint8_t new_button_status;
   static char content[11];
+
+  new_button_status = button_sensor.value(0);
+  if (new_button_status == old_button_status)
+      return;
+
+  old_button_status = new_button_status;
+  if(new_button_status == 0)
+      return;
 
   ++obs_counter;
 
