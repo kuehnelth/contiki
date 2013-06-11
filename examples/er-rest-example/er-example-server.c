@@ -42,15 +42,14 @@
 #include "contiki.h"
 #include "contiki-net.h"
 
-
 /* Define which resources to include to meet memory constraints. */
-#define REST_RES_HELLO 0
+#define REST_RES_HELLO 1
 #define REST_RES_MIRROR 0 /* causes largest code size */
 #define REST_RES_CHUNKS 0
-#define REST_RES_SEPARATE 1
+#define REST_RES_SEPARATE 0
 #define REST_RES_PUSHING 1
-#define REST_RES_EVENT 1
-#define REST_RES_SUB 1
+#define REST_RES_EVENT 0
+#define REST_RES_SUB 0
 #define REST_RES_LEDS 1
 #define REST_RES_TOGGLE 1
 #define REST_RES_LIGHT 0
@@ -102,7 +101,7 @@
 #warning "Erbium example without CoAP-specifc functionality"
 #endif /* CoAP-specific example */
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
@@ -477,7 +476,7 @@ separate_finalize_handler()
  * It takes an additional period parameter, which defines the interval to call [name]_periodic_handler().
  * A default post_handler takes care of subscriptions by managing a list of subscribers to notify.
  */
-PERIODIC_RESOURCE(pushing, METHOD_GET, "test/push", "title=\"Periodic demo\";obs", 0.5*CLOCK_SECOND);
+PERIODIC_RESOURCE(pushing, METHOD_GET, "test/push", "title=\"Periodic demo\";obs", CLOCK_SECOND);
 
 void
 pushing_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
@@ -707,7 +706,7 @@ light_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred
 /******************************************************************************/
 #if REST_RES_SHT21 && defined (PLATFORM_HAS_SHT21)
 /* A simple getter example. Returns the reading from sht21 sensor with a simple etag */
-RESOURCE(sht21_temperature, METHOD_GET, "sensors/sht21_temperature", "title=\"Temperature in [°C] (supports JSON)\";rt=\"TemperatureSensor\"");
+PERIODIC_RESOURCE(sht21_temperature, METHOD_GET, "sensors/sht21_temperature", "title=\"Temperature in [°C] (supports JSON)\";rt=\"TemperatureSensor\";obs", 5*CLOCK_SECOND);
 void
 sht21_temperature_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
@@ -747,7 +746,23 @@ sht21_temperature_handler(void* request, void* response, uint8_t *buffer, uint16
   }
 }
 
-RESOURCE(sht21_humidity, METHOD_GET, "sensors/sht21_humidity", "title=\"Relative Humidity in [%RH] (supports JSON)\";rt=\"HumiditySensor\"");
+void
+sht21_temperature_periodic_handler(resource_t *r)
+{
+  static uint16_t obs_counter = 0;
+  char tempstr[20] = "ERROR";
+  if (sht21_sensor.value(SHT21_SENSOR_TEMP) == 1)
+      sht21_sensor_getLastTemperature(tempstr, sizeof(tempstr));
+  /* Build notification. */
+  coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
+  coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
+  coap_set_payload(notification, tempstr, strlen(tempstr));
+
+  /* Notify the registered observers with the given message type, observe option, and payload. */
+  REST.notify_subscribers(r, obs_counter, notification);
+}
+
+PERIODIC_RESOURCE(sht21_humidity, METHOD_GET, "sensors/sht21_humidity", "title=\"Relative Humidity in [%RH] (supports JSON)\";rt=\"HumiditySensor\";obs", 5*CLOCK_SECOND);
 void
 sht21_humidity_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
@@ -785,6 +800,22 @@ sht21_humidity_handler(void* request, void* response, uint8_t *buffer, uint16_t 
     const char *msg = "Supporting content-types text/plain, application/xml, and application/json";
     REST.set_response_payload(response, msg, strlen(msg));
   }
+}
+
+void
+sht21_humidity_periodic_handler(resource_t *r)
+{
+  static uint16_t obs_counter = 0;
+  char humstr[20] = "ERROR";
+  if (sht21_sensor.value(SHT21_SENSOR_RELATIVE_HUMIDITY) == 1)
+      sht21_sensor_getLastelativeHumidity(humstr, sizeof(humstr));
+  /* Build notification. */
+  coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
+  coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
+  coap_set_payload(notification, humstr, strlen(humstr));
+
+  /* Notify the registered observers with the given message type, observe option, and payload. */
+  REST.notify_subscribers(r, obs_counter, notification);
 }
 
 #endif /* PLATFORM_HAS_SHT21 */
@@ -937,7 +968,7 @@ PROCESS_THREAD(rest_server_example, ev, data)
   /* No pre-handler anymore, user coap_separate_accept() and coap_separate_reject(). */
   rest_activate_resource(&resource_separate);
 #endif
-#if defined (PLATFORM_HAS_BUTTON) && (REST_RES_EVENT || (REST_RES_SEPARATE && WITH_COAP > 3))
+#if defined (PLATFORM_HAS_BUTTON) && (REST_RES_PUSHING || REST_RES_EVENT || (REST_RES_SEPARATE && WITH_COAP > 3))
   SENSORS_ACTIVATE(button_sensor);
 #endif
 #if REST_RES_SUB
@@ -957,8 +988,8 @@ PROCESS_THREAD(rest_server_example, ev, data)
 #endif
 #if defined (PLATFORM_HAS_SHT21) && REST_RES_SHT21
   SENSORS_ACTIVATE(sht21_sensor);
-  rest_activate_resource(&resource_sht21_temperature);
-  rest_activate_resource(&resource_sht21_humidity);
+  rest_activate_periodic_resource(&periodic_resource_sht21_temperature);
+  rest_activate_periodic_resource(&periodic_resource_sht21_humidity);
 #endif
 #if defined (PLATFORM_HAS_BATTERY) && REST_RES_BATTERY
   SENSORS_ACTIVATE(battery_sensor);
