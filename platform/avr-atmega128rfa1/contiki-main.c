@@ -249,6 +249,8 @@ uint8_t i;
   process_start(&etimer_process, NULL);
   ctimer_init();
 
+  leds_init();
+  leds_on(LEDS_YELLOW);
   /* Start radio and radio receive process */
   NETSTACK_RADIO.init();
 
@@ -386,7 +388,7 @@ uint8_t i;
 #endif
 #endif /* ANNOUNCE_BOOT */
 
-  leds_init();
+
 #if RF230BB_CONF_LEDONPORTE1
   /* NB: PORTE1 conflicts with UART0 */
   DDRE|=(1<<DDE1);  //set led pin to output (Micheal Hatrtman board)

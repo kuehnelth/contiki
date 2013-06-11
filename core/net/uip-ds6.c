@@ -52,6 +52,7 @@
 
 #define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
+#include "dev/leds.h"
 
 #ifdef UIP_CONF_DS6_NEIGHBOR_STATE_CHANGED
 #define NEIGHBOR_STATE_CHANGED(n) UIP_CONF_DS6_NEIGHBOR_STATE_CHANGED(n)
@@ -318,6 +319,7 @@ uip_ds6_nbr_add(uip_ipaddr_t *ipaddr, uip_lladdr_t *lladdr,
     stimer_set(&locnbr->reachable, 0);
     stimer_set(&locnbr->sendns, 0);
     locnbr->nscount = 0;
+    leds_off(LEDS_YELLOW);
     PRINTF("Adding neighbor with ip addr ");
     PRINT6ADDR(ipaddr);
     PRINTF("link addr ");
