@@ -56,6 +56,7 @@
 #define REST_RES_BATTERY 0
 #define REST_RES_RADIO 0
 #define REST_RES_SHT21 1
+#define REST_RES_BMP085 1
 
 #if !UIP_CONF_IPV6_RPL && !defined (CONTIKI_TARGET_MINIMAL_NET) && !defined (CONTIKI_TARGET_NATIVE)
 #warning "Compiling with static routing!"
@@ -85,6 +86,9 @@
 #endif
 #if defined (PLATFORM_HAS_SHT21)
 #include "dev/i2c/sht21-sensor.h"
+#endif
+#if defined (PLATFORM_HAS_BMP085)
+#include "dev/i2c/bmp085-sensor.h"
 #endif
 
 
@@ -821,6 +825,70 @@ sht21_humidity_periodic_handler(resource_t *r)
 #endif /* PLATFORM_HAS_SHT21 */
 
 /******************************************************************************/
+#if REST_RES_BMP085 && defined (PLATFORM_HAS_BMP085)
+/* A simple getter example. Returns the reading from bmp085 sensor with a simple etag */
+PERIODIC_RESOURCE(bmp085, METHOD_GET, "sensors/bmp085", "title=\"Air pressure\";rt=\"PressureSensor\";obs", 5*CLOCK_SECOND);
+void
+bmp085_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  char tempstr[20] = "ERROR";
+  int32_t p, t;
+  if (bmp085_sensor_getPressure(&p, &t) == true)
+    snprintf(tempstr, 20, "%4ld.%02ld hPa", p/100, p%100);
+
+  const uint16_t *accept = NULL;
+  int num = REST.get_header_accept(request, &accept);
+
+  if ((num==0) || (num && accept[0]==REST.type.TEXT_PLAIN))
+  {
+    REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "%s", tempstr);
+
+    REST.set_response_payload(response, (uint8_t *)buffer, strlen((char *)buffer));
+  }
+  else if (num && (accept[0]==REST.type.APPLICATION_XML))
+  {
+    REST.set_header_content_type(response, REST.type.APPLICATION_XML);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "<pressure value=\"%s\"/>", tempstr);
+
+    REST.set_response_payload(response, buffer, strlen((char *)buffer));
+  }
+  else if (num && (accept[0]==REST.type.APPLICATION_JSON))
+  {
+    REST.set_header_content_type(response, REST.type.APPLICATION_JSON);
+    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "{'pressure':'%s'}", tempstr);
+
+    REST.set_response_payload(response, buffer, strlen((char *)buffer));
+  }
+  else
+  {
+    REST.set_response_status(response, REST.status.NOT_ACCEPTABLE);
+    const char *msg = "Supporting content-types text/plain, application/xml, and application/json";
+    REST.set_response_payload(response, msg, strlen(msg));
+  }
+}
+
+void
+bmp085_periodic_handler(resource_t *r)
+{
+  static uint16_t obs_counter = 0;
+  char tempstr[20] = "ERROR";
+  int32_t p, t;
+  if (bmp085_sensor_getPressure(&p, &t) == true)
+    snprintf(tempstr, 20, "%4ld.%02ld hPa", p/100, p%100);
+  printf("%s\n", tempstr);
+
+  /* Build notification. */
+  coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
+  coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
+  coap_set_payload(notification, tempstr, strlen(tempstr));
+
+  /* Notify the registered observers with the given message type, observe option, and payload. */
+  REST.notify_subscribers(r, obs_counter, notification);
+}
+#endif /* PLATFORM_HAS_BMP085 */
+
+/******************************************************************************/
 #if REST_RES_BATTERY && defined (PLATFORM_HAS_BATTERY)
 /* A simple getter example. Returns the reading from light sensor with a simple etag */
 RESOURCE(battery, METHOD_GET, "sensors/battery", "title=\"Battery status\";rt=\"Battery\"");
@@ -990,6 +1058,10 @@ PROCESS_THREAD(rest_server_example, ev, data)
   SENSORS_ACTIVATE(sht21_sensor);
   rest_activate_periodic_resource(&periodic_resource_sht21_temperature);
   rest_activate_periodic_resource(&periodic_resource_sht21_humidity);
+#endif
+#if defined (PLATFORM_HAS_BMP085) && REST_RES_BMP085
+  SENSORS_ACTIVATE(bmp085_sensor);
+  rest_activate_periodic_resource(&periodic_resource_bmp085);
 #endif
 #if defined (PLATFORM_HAS_BATTERY) && REST_RES_BATTERY
   SENSORS_ACTIVATE(battery_sensor);
