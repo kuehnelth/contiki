@@ -6,13 +6,15 @@
  *         Stefan Lorenz <s69401@informatik.htw-dresden.de>
  */
 
-#include "avr-atmega128rfa1/atmega128rfa1-aes.h"
-#include <avr/io.h> 
+#include "dev/atmega128rfa1-aes.h"
+#include <avr/io.h>
 #include <stdio.h>
 
 #define KEYLEN 16
 #define MAX_DATALEN 16
 #define MIN(a,b) ((a) < (b)? (a): (b))
+//AES_STATUS_RY = 0 ?!?
+#define AES_STATUS_RY 0
 /*---------------------------------------------------------------------------*/
 /**
  * Step 1: Key Setup:
@@ -22,8 +24,9 @@
  * ATmega128rfa1 only supports AES-128 standard(128 Bit/16 Byte key-length)
  */
 void
-atmega128rfa1_aes_set_key(const uint8_t *key)
+atmega128rfa1_aes_set_key(uint8_t *key)
 {
+	int i;
 	//write aes-key into buffer 
 	for(i = 0; i < 16; i++) {
 		AES_KEY = key[i];
@@ -40,16 +43,30 @@ void
 atmega128rfa1_aes_set_mode(int index)
 {
 	// index = 0 -> ECB / index = 1 -> CBC
-	AES_MODE = index;
-	AES_CTRL &= ~(1 << AES_MODE);
+	//AES_MODE = index;
+	switch(index)
+	{	
+		case 0:
+			AES_CTRL &= ~(1 << AES_MODE);
+			break;
+		case 1:	
+			AES_CTRL |= ~(1 << AES_MODE);
+			break;
+	}
 }
 /*---------------------------------------------------------------------------*/
 void
 atmega128rfa1_aes_set_direction(int index)
 {
 	// index = 0 -> encryption / index = 1 -> decryption
-	AES_DIR = index;
-	AES_CTRL &= ~(1 << AES_DIR);
+	//AES_DIR = index;
+	switch(index)
+	{
+		case 0:
+			AES_CTRL &= ~(1 << AES_DIR);
+		case 1:
+			AES_CTRL |= ~(1 << AES_DIR);
+	}
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -60,10 +77,11 @@ atmega128rfa1_aes_set_direction(int index)
 void
 atmega128rfa1_aes_write_data16(uint8_t *data, int len)
 {
+	int i;
 	len = MIN(len, MAX_DATALEN);
 	//write string to encrypt/decrypt into buffer 
    	for (i = 0; i < len; i++) { 
-      		AES_STATE = string[i];
+      		AES_STATE = data[i];
    	} 
 }
 /*---------------------------------------------------------------------------*/
@@ -75,7 +93,7 @@ void
 atmega128rfa1_aes_start_operation()
 {
 	//The encryption or decryption is initiated with bit AES_REQUEST = 1
-	AES_REQUEST = 1;
+	//AES_REQUEST = 1;
 	AES_CTRL |= (1 << AES_REQUEST);
 }
 /*---------------------------------------------------------------------------*/
@@ -102,7 +120,8 @@ atmega128rfa1_aes_wait()
 void
 atmega128rfa1_aes_read_data16(uint8_t *data, int len)
 {
-	int len = MIN(AES_STATE, MAX_DATALEN);
+	int i;
+	len = MIN(AES_STATE, MAX_DATALEN);
 	for(i = 0; i < len; i++) { 
       		data[i] = AES_STATE; 
    	}
@@ -125,6 +144,6 @@ atmega128rfa1_aes_cipher(uint8_t *data, int len, int direction)
 		atmega128rfa1_aes_write_data16(data + i, MIN(len - i, MAX_DATALEN));
 		atmega128rfa1_aes_start_operation();
 		atmega128rfa1_aes_wait();
-		atmega128rfa1_aes_read_data16(data + i, MIN(len - i, MAX_DATALEN);
+		atmega128rfa1_aes_read_data16(data + i, MIN(len - i, MAX_DATALEN));
 	}
 }
