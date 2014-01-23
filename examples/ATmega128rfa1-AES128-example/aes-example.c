@@ -1,7 +1,7 @@
 #include "contiki.h"
 #include <stdio.h>
 #include <string.h>
-#include "dev/atmega128rfa1-aes.h"
+#include "atmega128rfa1-aes.h"
 /*---------------------------------------------------------------------------*/
 PROCESS(aes_example_process, "AES example process");
 AUTOSTART_PROCESSES(&aes_example_process);
