@@ -10,12 +10,12 @@
  * \param key  A pointer to a 16-byte AES key
  *
  *             Write encryption or decryption key to KEY
- * 	           buffer(16 consecutive byte writes to AES_KEY)
+ * 	       buffer(16 consecutive byte writes to AES_KEY)
  *
  *             ATmega128rfa1 only supports AES-128 standard(128 Bit/16 Byte key-length)
  *
  */
-void atmega128rfa1_aes_set_key(const uint8_t *key, int len);
+void atmega128rfa1_aes_set_key(uint8_t *key);
 /**
  * \brief      Setup the AES mode
  * \param index The mode index: either 0 or 1.
@@ -23,7 +23,7 @@ void atmega128rfa1_aes_set_key(const uint8_t *key, int len);
  *             This function sets up the AES mode.
  *
  *             0 sets up the AES-ECB-Mode.
- *	           1 sets up the AES-CBC-Mode.
+ *	       1 sets up the AES-CBC-Mode.
  *
  *             Note: ECB decryption is not required for IEEE 802.15.4 or ZigBee security processing.
  *             The radio transceiver provides this functionality as an additional feature.
