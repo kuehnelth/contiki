@@ -6,7 +6,7 @@
  *         Stefan Lorenz <s69401@informatik.htw-dresden.de>
  */
 
-#include "dev/atmega128rfa1-aes.h"
+#include "atmega128rfa1-aes.h"
 #include <avr/io.h>
 #include <stdio.h>
 
