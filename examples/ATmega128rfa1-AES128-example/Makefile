@@ -29,7 +29,7 @@ UIP_CONF_IPV6=1
 CFLAGS+= -DUIP_CONF_IPV6_RPL
 
 #all: $(CONTIKI_PROJECT)
-CONTIKI = ../../..
+CONTIKI = ../..
 include $(CONTIKI)/Makefile.include
 
 #=======================================================================
