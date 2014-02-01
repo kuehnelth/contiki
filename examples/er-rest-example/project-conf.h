@@ -86,4 +86,9 @@
 
 #define PLATFORM_HAS_SHT21 1
 #define PLATFORM_HAS_BMP085 1
+
+/* Sensor nodes are not supposed to act as routers */
+#undef UIP_CONF_ROUTER
+#define UIP_CONF_ROUTER 0
+
 #endif /* __PROJECT_ERBIUM_CONF_H__ */
