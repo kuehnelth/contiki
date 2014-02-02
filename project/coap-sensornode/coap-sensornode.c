@@ -217,7 +217,9 @@ sht21_temperature_handler(void* request, void* response, uint8_t *buffer, uint16
 {
   char tempstr[20] = "ERROR";
   if (sht21_sensor.value(SHT21_SENSOR_TEMP) == 1)
-      sht21_sensor_getLastTemperature(tempstr, sizeof(tempstr));
+    sht21_sensor_getLastTemperature(tempstr, sizeof(tempstr));
+  if (strcmp(tempstr, "ERROR") == 0)
+    REST.set_response_status(response, REST.status.INTERNAL_SERVER_ERROR);
 
   const uint16_t *accept = NULL;
   int num = REST.get_header_accept(request, &accept);
@@ -257,11 +259,13 @@ sht21_temperature_periodic_handler(resource_t *r)
   static uint16_t obs_counter = 0;
   char tempstr[20] = "ERROR";
   if (sht21_sensor.value(SHT21_SENSOR_TEMP) == 1)
-      sht21_sensor_getLastTemperature(tempstr, sizeof(tempstr));
+    sht21_sensor_getLastTemperature(tempstr, sizeof(tempstr));
   /* Build notification. */
   coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
   coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
   coap_set_payload(notification, tempstr, strlen(tempstr));
+  if (strcmp(tempstr, "ERROR") == 0)
+    coap_set_status_code(notification, REST.status.INTERNAL_SERVER_ERROR);
 
   /* Notify the registered observers with the given message type, observe option, and payload. */
   REST.notify_subscribers(r, obs_counter, notification);
@@ -273,7 +277,9 @@ sht21_humidity_handler(void* request, void* response, uint8_t *buffer, uint16_t 
 {
   char humstr[20] = "ERROR";
   if (sht21_sensor.value(SHT21_SENSOR_RELATIVE_HUMIDITY) == 1)
-      sht21_sensor_getLastelativeHumidity(humstr, sizeof(humstr));
+    sht21_sensor_getLastelativeHumidity(humstr, sizeof(humstr));
+  if (strcmp(humstr, "ERROR") == 0)
+    REST.set_response_status(response, REST.status.INTERNAL_SERVER_ERROR);
 
   const uint16_t *accept = NULL;
   int num = REST.get_header_accept(request, &accept);
@@ -313,11 +319,13 @@ sht21_humidity_periodic_handler(resource_t *r)
   static uint16_t obs_counter = 0;
   char humstr[20] = "ERROR";
   if (sht21_sensor.value(SHT21_SENSOR_RELATIVE_HUMIDITY) == 1)
-      sht21_sensor_getLastelativeHumidity(humstr, sizeof(humstr));
+    sht21_sensor_getLastelativeHumidity(humstr, sizeof(humstr));
   /* Build notification. */
   coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
   coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
   coap_set_payload(notification, humstr, strlen(humstr));
+  if (strcmp(humstr, "ERROR") == 0)
+    coap_set_status_code(notification, REST.status.INTERNAL_SERVER_ERROR);
 
   /* Notify the registered observers with the given message type, observe option, and payload. */
   REST.notify_subscribers(r, obs_counter, notification);
@@ -336,6 +344,8 @@ bmp085_handler(void* request, void* response, uint8_t *buffer, uint16_t preferre
   int32_t p, t;
   if (bmp085_sensor_getPressure(&p, &t) == true)
     snprintf(tempstr, 20, "%4ld.%02ld hPa", p/100, p%100);
+  if (strcmp(tempstr, "ERROR") == 0)
+    REST.set_response_status(response, REST.status.INTERNAL_SERVER_ERROR);
 
   const uint16_t *accept = NULL;
   int num = REST.get_header_accept(request, &accept);
@@ -383,6 +393,8 @@ bmp085_periodic_handler(resource_t *r)
   coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
   coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
   coap_set_payload(notification, tempstr, strlen(tempstr));
+  if (strcmp(tempstr, "ERROR") == 0)
+    coap_set_status_code(notification, REST.status.INTERNAL_SERVER_ERROR);
 
   /* Notify the registered observers with the given message type, observe option, and payload. */
   REST.notify_subscribers(r, obs_counter, notification);
