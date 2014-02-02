@@ -91,4 +91,10 @@
 #undef UIP_CONF_ROUTER
 #define UIP_CONF_ROUTER 0
 
+//lower send/receive power for testing 
+/*
+#define RF230_MAX_TX_POWER 15
+#define RF230_MIN_RX_POWER 30
+*/
+
 #endif /* __PROJECT_ERBIUM_CONF_H__ */
