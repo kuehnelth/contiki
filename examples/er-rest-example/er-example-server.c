@@ -716,7 +716,7 @@ light_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred
 /******************************************************************************/
 #if REST_RES_SHT21 && defined (PLATFORM_HAS_SHT21)
 /* A simple getter example. Returns the reading from sht21 sensor with a simple etag */
-PERIODIC_RESOURCE(sht21_temperature, METHOD_GET, "sensors/sht21_temperature", "title=\"Temperature in [°C] (supports JSON)\";rt=\"Temperature-C\";if=\"core.s\";obs", 5*CLOCK_SECOND);
+PERIODIC_RESOURCE(sht21_temperature, METHOD_GET, "sensors/sht21_temperature", "title=\"Temperature in [°C] (supports JSON)\";rt=\"Temperature-C\";if=\"core.s\";obs", 60*CLOCK_SECOND);
 void
 sht21_temperature_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
@@ -772,7 +772,7 @@ sht21_temperature_periodic_handler(resource_t *r)
   REST.notify_subscribers(r, obs_counter, notification);
 }
 
-PERIODIC_RESOURCE(sht21_humidity, METHOD_GET, "sensors/sht21_humidity", "title=\"Relative Humidity in [%RH] (supports JSON)\";rt=\"Humidity-rel\";if=\"core.s\";obs", 5*CLOCK_SECOND);
+PERIODIC_RESOURCE(sht21_humidity, METHOD_GET, "sensors/sht21_humidity", "title=\"Relative Humidity in [%RH] (supports JSON)\";rt=\"Humidity-rel\";if=\"core.s\";obs", 60*CLOCK_SECOND);
 void
 sht21_humidity_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
@@ -833,7 +833,7 @@ sht21_humidity_periodic_handler(resource_t *r)
 /******************************************************************************/
 #if REST_RES_BMP085 && defined (PLATFORM_HAS_BMP085)
 /* A simple getter example. Returns the reading from bmp085 sensor with a simple etag */
-PERIODIC_RESOURCE(bmp085, METHOD_GET, "sensors/bmp085", "title=\"Air pressure\";rt=\"Pressure-hPa\";if=\"core.s\";obs", 5*CLOCK_SECOND);
+PERIODIC_RESOURCE(bmp085, METHOD_GET, "sensors/bmp085", "title=\"Air pressure\";rt=\"Pressure-hPa\";if=\"core.s\";obs", 60*CLOCK_SECOND);
 void
 bmp085_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
