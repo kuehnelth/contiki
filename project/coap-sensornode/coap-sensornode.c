@@ -436,6 +436,7 @@ PROCESS_THREAD(rest_server_example, ev, data)
 
   /* Activate the application-specific resources. */
 #if defined (PLATFORM_HAS_BUTTON) && REST_RES_EVENT
+  SENSORS_ACTIVATE(button_sensor);
   rest_activate_event_resource(&resource_event);
 #endif
 #if defined (PLATFORM_HAS_LEDS)
@@ -465,10 +466,6 @@ PROCESS_THREAD(rest_server_example, ev, data)
 #if REST_RES_EVENT
       /* Call the event_handler for this application-specific event. */
       event_event_handler(&resource_event);
-#endif
-#if REST_RES_SEPARATE && WITH_COAP>3
-      /* Also call the separate response example handler. */
-      separate_finalize_handler();
 #endif
     }
 #endif /* PLATFORM_HAS_BUTTON */
