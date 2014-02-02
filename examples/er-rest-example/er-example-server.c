@@ -615,6 +615,7 @@ leds_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_
   const char *mode = NULL;
   uint8_t led = 0;
   int success = 1;
+  int changed = 0;
 
   if ((len=REST.get_query_variable(request, "color", &color))) {
     PRINTF("color %.*s\n", len, color);
@@ -636,8 +637,10 @@ leds_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_
     PRINTF("mode %s\n", mode);
 
     if (strncmp(mode, "on", len)==0) {
+      changed = (leds_get() & led) == 0;
       leds_on(led);
     } else if (strncmp(mode, "off", len)==0) {
+      changed = (leds_get() & led) == led;
       leds_off(led);
     } else {
       success = 0;
@@ -648,6 +651,9 @@ leds_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_
 
   if (!success) {
     REST.set_response_status(response, REST.status.BAD_REQUEST);
+  } else {
+    if (changed)
+      REST.set_response_status(response, REST.status.CHANGED);
   }
 }
 #endif
